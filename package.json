@@ -1,0 +1,12 @@
+{
+  "name": "house-rules-monopoly-leaderboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Weekly Monopoly leaderboard with JSON file persistence",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

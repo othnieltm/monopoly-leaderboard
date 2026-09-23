@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="theme-color" content="#000000" />
+	<title>House Rules | Monopoly leaderboard</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+		:root {
+			--ink: #111111;
+			--muted: #707070;
+			--line: #e7e7e7;
+			--panel: #fafafa;
+			--soft: #f4f4f4;
+			--accent: #0070f3;
+			--success: #46a758;
+			--danger: #d92d20;
+			--radius: 8px;
+		}
+
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			color: var(--ink);
+			background: #fff;
+			font-family: 'Manrope', sans-serif;
+			-webkit-font-smoothing: antialiased;
+		}
+		button, input, select { font: inherit; }
+		button { cursor: pointer; }
+		.shell { width: min(1160px, calc(100% - 48px)); margin: 0 auto; }
+
+		header {
+			border-bottom: 1px solid var(--line);
+			height: 72px;
+			display: flex;
+			align-items: center;
+		}
+		.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.04em; }
+		.mark { width: 22px; height: 22px; background: #000; transform: rotate(45deg); border-radius: 3px; position: relative; }
+		.mark::after { content: ''; position: absolute; inset: 6px; background: #fff; border-radius: 1px; }
+		.header-meta { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+		.intro { padding: 64px 0 42px; display: flex; align-items: end; justify-content: space-between; gap: 28px; }
+		.eyebrow { color: var(--accent); font-family: 'DM Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+		h1 { font-size: clamp(36px, 5vw, 62px); letter-spacing: -0.075em; line-height: .98; margin: 0; max-width: 650px; }
+		.intro p { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 390px; margin: 18px 0 0; }
+		.score-key { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; min-width: 260px; background: var(--panel); }
+		.score-key-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+		.score-items { display: flex; gap: 18px; }
+		.score-items strong { display: block; font-size: 20px; letter-spacing: -.05em; }
+		.score-items span { color: var(--muted); font-size: 11px; }
+
+		.layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, .9fr); gap: 22px; align-items: start; padding-bottom: 80px; }
+		.panel { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; overflow: hidden; }
+		.panel-heading { display: flex; justify-content: space-between; align-items: center; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+		.panel-heading h2 { margin: 0; font-size: 16px; letter-spacing: -.035em; }
+		.count { font-family: 'DM Mono', monospace; color: var(--muted); font-size: 12px; }
+
+		.leaderboard-head, .player-row { display: grid; grid-template-columns: 58px minmax(150px, 1fr) 100px 100px; align-items: center; gap: 12px; padding: 0 22px; }
+		.leaderboard-head { min-height: 40px; background: var(--panel); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+		.player-row { min-height: 72px; border-top: 1px solid var(--line); }
+		.rank { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
+		.player-name { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 14px; }
+		.avatar { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); font-size: 11px; font-weight: 800; }
+		.points { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
+		.wins { font-size: 13px; color: var(--muted); }
+		.empty { padding: 48px 22px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+		.form-body { padding: 22px; }
+		label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+		input, select { width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; background: #fff; color: var(--ink); padding: 11px 12px; outline: none; transition: border-color .15s, box-shadow .15s; }
+		input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,112,243,.12); }
+		.field { margin-bottom: 18px; }
+		.placement { display: grid; grid-template-columns: 30px 1fr; align-items: center; gap: 10px; margin-bottom: 10px; }
+		.medal { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: var(--soft); font-family: 'DM Mono', monospace; font-size: 11px; }
+		.points-preview { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+		.points-preview strong { color: var(--ink); font-family: 'DM Mono', monospace; }
+		.primary { width: 100%; color: #fff; border: 0; border-radius: 6px; background: #000; padding: 12px 16px; font-weight: 700; margin-top: 18px; transition: opacity .15s, transform .15s; }
+		.primary:hover { opacity: .78; }
+		.primary:active { transform: translateY(1px); }
+		.secondary { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 8px 11px; font-size: 12px; font-weight: 700; }
+		.secondary:hover { background: var(--soft); }
+		.add-row { display: flex; gap: 8px; }
+		.add-row input { min-width: 0; }
+		.add-row button { flex: 0 0 auto; }
+		.subsection { padding: 22px; border-top: 1px solid var(--line); }
+		.subsection h3 { margin: 0 0 14px; font-size: 13px; }
+		.helper { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 8px 0 0; }
+		.history { margin-top: 22px; }
+		.history-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 22px; border-top: 1px solid var(--line); }
+		.history-date { font-size: 13px; font-weight: 700; }
+		.history-winners { color: var(--muted); font-size: 12px; margin-top: 4px; }
+		.delete { color: var(--muted); border: 0; background: none; font-size: 18px; padding: 5px; }
+		.delete:hover { color: var(--danger); }
+		.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 15px); opacity: 0; pointer-events: none; background: #000; color: #fff; padding: 12px 16px; border-radius: 6px; font-size: 13px; transition: all .2s; }
+		.toast.show { opacity: 1; transform: translate(-50%, 0); }
+		footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; padding: 20px 0 34px; }
+
+		@media (max-width: 760px) {
+			.shell { width: min(100% - 28px, 600px); }
+			.header-meta { display: none; }
+			.intro { display: block; padding: 42px 0 30px; }
+			.score-key { margin-top: 28px; }
+			.layout { display: flex; flex-direction: column; }
+			.layout > * { width: 100%; }
+			.leaderboard-head, .player-row { grid-template-columns: 40px minmax(120px, 1fr) 62px 48px; padding: 0 14px; gap: 8px; }
+			.player-name { gap: 8px; }
+			.wins { text-align: right; }
+			.panel-heading { padding: 18px 14px; }
+			.form-body, .subsection { padding: 18px 14px; }
+			.history-row { padding: 14px; }
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<div class="shell" style="display:flex;align-items:center;width:100%;">
+			<div class="brand"><span class="mark" aria-hidden="true"></span><span>AVENGERS</span></div>
+			<div class="header-meta">Weekly Monopoly League</div>
+		</div>
+	</header>
+
+	<main class="shell">
+		<section class="intro">
+			<div>
+				<div class="eyebrow">Season / 2026</div>
+				<h1>Avengers Monopoly Leaderboard.</h1>
+				<p>Wasorta' here or pakabhazika?</p>
+                <p>Wapinda muRio with a hotel? zvinowanika Bro</p>
+			</div>
+			<div class="score-key">
+				<div class="score-key-label">Scoring system</div>
+				<div class="score-items"><div><strong>3</strong><span>Win</span></div><div><strong>2</strong><span>Second</span></div><div><strong>1</strong><span>Third</span></div></div>
+			</div>
+		</section>
+
+		<section class="layout">
+			<div>
+				<div class="panel">
+					<div class="panel-heading"><h2>Leaderboard</h2><span class="count" id="playerCount">0 players</span></div>
+					<div class="leaderboard-head"><span>#</span><span>Player</span><span>Points</span><span>Wins</span></div>
+					<div id="leaderboard"><div class="empty">No scores yet.<br>Add players and record your first game to get started.</div></div>
+				</div>
+				<div class="panel history">
+					<div class="panel-heading"><h2>Game history</h2><span class="count" id="gameCount">0 games</span></div>
+					<div id="history"><div class="empty">Your weekly games will appear here.</div></div>
+				</div>
+			</div>
+
+			<aside class="panel">
+				<div class="panel-heading"><h2>Record a game</h2><span class="count">+ weekly update</span></div>
+				<form class="form-body" id="gameForm">
+					<div class="field"><label for="gameDate">Game date</label><input id="gameDate" type="date" required /></div>
+					<div class="field">
+						<label>Finishers</label>
+						<div class="placement"><span class="medal">01</span><select id="first" required><option value="">Select winner</option></select></div>
+						<div class="placement"><span class="medal">02</span><select id="second" required><option value="">Select second</option></select></div>
+						<div class="placement"><span class="medal">03</span><select id="third"><option value="">Select third (optional)</option></select></div>
+					</div>
+					<div class="points-preview"><span>Points awarded</span><strong>+3 &nbsp; +2 &nbsp; (+1)</strong></div>
+					<button class="primary" type="submit">Save weekly result</button>
+					<p class="helper">At least 2 players are required. Third place is optional for two-player games.</p>
+				</form>
+				<div class="subsection">
+					<h3>Players</h3>
+					<div class="add-row"><input id="newPlayer" type="text" maxlength="24" placeholder="e.g. Andile" aria-label="Player name" /><button class="secondary" id="addPlayer" type="button">Add player</button></div>
+					<p class="helper">Add everyone who plays before recording a result.</p>
+				</div>
+			</aside>
+		</section>
+	</main>
+	<footer><div class="shell">House Rules &middot; League data is stored in data.json.</div></footer>
+	<div class="toast" id="toast" role="status"></div>
+
+	<script>
+		const STORAGE_KEY = 'house-rules-monopoly-v1';
+		let state = { players: [], games: [] };
+		const elements = {
+			leaderboard: document.getElementById('leaderboard'), history: document.getElementById('history'),
+			playerCount: document.getElementById('playerCount'), gameCount: document.getElementById('gameCount'),
+			gameDate: document.getElementById('gameDate'), gameForm: document.getElementById('gameForm'),
+			newPlayer: document.getElementById('newPlayer'), addPlayer: document.getElementById('addPlayer'), toast: document.getElementById('toast')
+		};
+		function localDate() { const date = new Date(); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 10); }
+		elements.gameDate.value = localDate();
+
+		async function loadState() {
+			const localState = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"players":[],"games":[]}');
+			if (location.protocol === 'file:') { state = localState; return; }
+			try {
+				const response = await fetch('/api/state', { cache: 'no-store' });
+				if (!response.ok) throw new Error('Could not load league data');
+				state = await response.json();
+			} catch (error) {
+				state = localState;
+				notify('Using local data: server storage is unavailable');
+			}
+		}
+		async function save() {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+			if (location.protocol === 'file:') return;
+			const response = await fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+			if (!response.ok) throw new Error('Could not save league data');
+		}
+		function initials(name) { return name.split(/\s+/).map(word => word[0]).join('').slice(0, 2).toUpperCase(); }
+		function notify(message) { elements.toast.textContent = message; elements.toast.classList.add('show'); setTimeout(() => elements.toast.classList.remove('show'), 2200); }
+		function getScores() {
+			return state.players.map(name => {
+				const finishes = state.games.flatMap(game => game.results).filter(result => result.name === name);
+				return { name, points: finishes.reduce((total, result) => total + result.points, 0), wins: finishes.filter(result => result.points === 3).length };
+			}).sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name));
+		}
+		function renderLeaderboard() {
+			const scores = getScores();
+			elements.playerCount.textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
+			if (!scores.length) { elements.leaderboard.innerHTML = '<div class="empty">No scores yet.<br>Add players and record your first game to get started.</div>'; return; }
+			elements.leaderboard.innerHTML = scores.map((score, index) => `<div class="player-row"><span class="rank">${String(index + 1).padStart(2, '0')}</span><span class="player-name"><span class="avatar">${initials(score.name)}</span>${escapeHtml(score.name)}</span><span class="points">${score.points} pts</span><span class="wins">${score.wins} ${score.wins === 1 ? 'win' : 'wins'}</span></div>`).join('');
+		}
+		function renderSelects() {
+			['first', 'second', 'third'].forEach((id, index) => {
+				const select = document.getElementById(id); const current = select.value;
+				select.required = id !== 'third' || state.players.length >= 3;
+				const label = id === 'third' && state.players.length < 3 ? 'third (optional)' : ['winner', 'second', 'third'][index];
+				select.innerHTML = `<option value="">Select ${label}</option>` + state.players.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+				if (state.players.includes(current)) select.value = current;
+			});
+		}
+		function renderHistory() {
+			elements.gameCount.textContent = `${state.games.length} ${state.games.length === 1 ? 'game' : 'games'}`;
+			if (!state.games.length) { elements.history.innerHTML = '<div class="empty">Your weekly games will appear here.</div>'; return; }
+			elements.history.innerHTML = [...state.games].reverse().map(game => `<div class="history-row"><div><div class="history-date">${new Date(`${game.date}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div><div class="history-winners">${game.results.map(result => `${result.name} (+${result.points})`).join(' &middot; ')}</div></div><button class="delete" data-id="${game.id}" aria-label="Delete game">&times;</button></div>`).join('');
+			document.querySelectorAll('.delete').forEach(button => button.addEventListener('click', async () => { state.games = state.games.filter(game => game.id !== button.dataset.id); await save(); render(); notify('Game removed'); }));
+		}
+		function escapeHtml(value) { return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character])); }
+		function render() { renderLeaderboard(); renderSelects(); renderHistory(); }
+
+		elements.addPlayer.addEventListener('click', async () => {
+			const name = elements.newPlayer.value.trim();
+			if (!name) return notify('Enter a player name first');
+			if (state.players.some(player => player.toLowerCase() === name.toLowerCase())) return notify('That player is already added');
+			state.players.push(name); state.players.sort((a, b) => a.localeCompare(b)); elements.newPlayer.value = ''; await save(); render(); notify(`${name} joined the table`);
+		});
+		elements.newPlayer.addEventListener('keydown', event => { if (event.key === 'Enter') elements.addPlayer.click(); });
+		elements.gameForm.addEventListener('submit', async event => {
+			event.preventDefault();
+			if (state.players.length < 2) return notify('Add at least two players first');
+			const results = ['first', 'second', 'third'].map((id, index) => ({ name: document.getElementById(id).value, points: 3 - index })).filter(result => result.name);
+			if (results.length < 2) return notify('Choose at least two finishers');
+			if (new Set(results.map(result => result.name)).size !== results.length) return notify('Choose different players');
+			state.games.push({ id: `${Date.now()}`, date: elements.gameDate.value, results }); await save(); elements.gameForm.reset(); elements.gameDate.value = localDate(); render(); notify('Weekly result saved');
+		});
+		loadState().then(render);
+	</script>
+</body>
+</html>
