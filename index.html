@@ -181,11 +181,12 @@
 
 	<script type="module">
 		import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-		import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
-		const firebaseConfig = { apiKey: 'AIzaSyCLJ4OqtwQQY69OmMSw1W3DAPoJzl84FPQ', authDomain: 'avengersmonopoly.firebaseapp.com', projectId: 'avengersmonopoly', storageBucket: 'avengersmonopoly.firebasestorage.app', messagingSenderId: '799607553775', appId: '1:799607553775:web:64cfdcb6b8486e1e96251a', measurementId: 'G-NQHJ6W2C5D' };
+		import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js';
+		const firebaseConfig = { apiKey: 'AIzaSyCLJ4OqtwQQY69OmMSw1W3DAPoJzl84FPQ', authDomain: 'avengersmonopoly.firebaseapp.com', databaseURL: 'https://avengersmonopoly-default-rtdb.europe-west1.firebasedatabase.app', projectId: 'avengersmonopoly', storageBucket: 'avengersmonopoly.firebasestorage.app', messagingSenderId: '799607553775', appId: '1:799607553775:web:64cfdcb6b8486e1e96251a', measurementId: 'G-NQHJ6W2C5D' };
 		const app = initializeApp(firebaseConfig);
-		const db = getFirestore(app);
-		const stateRef = doc(db, 'leaderboard', 'state');
+		const db = getDatabase(app);
+		const stateRef = ref(db, 'leaderboard/state');
+		const databaseRoot = ref(db);
 		let state = { players: [], games: [] };
 		const elements = {
 			leaderboard: document.getElementById('leaderboard'), history: document.getElementById('history'),
@@ -221,14 +222,21 @@
 
 		async function loadState() {
 			try {
-				const snapshot = await getDoc(stateRef);
+				const snapshot = await get(stateRef);
 				if (snapshot.exists()) {
-					state = normalizeState(snapshot.data());
+					state = normalizeState(snapshot.val());
 				} else {
-					const response = await fetch('/data.json', { cache: 'no-store' });
-					if (!response.ok) throw new Error('Could not load initial league data');
-					state = normalizeState(await response.json());
-					await setDoc(stateRef, state);
+					const rootSnapshot = await get(databaseRoot);
+					const rootState = rootSnapshot.exists() ? rootSnapshot.val() : null;
+					if (rootState && (rootState.players || rootState.games)) {
+						state = normalizeState(rootState);
+						await set(stateRef, state);
+					} else {
+						const response = await fetch('/data.json', { cache: 'no-store' });
+						if (!response.ok) throw new Error('Could not load initial league data');
+						state = normalizeState(await response.json());
+						await set(stateRef, state);
+					}
 				}
 			} catch (error) {
 				console.error('Firebase load failed:', error);
@@ -237,7 +245,7 @@
 			}
 		}
 		async function save() {
-			await setDoc(stateRef, { players: state.players, games: state.games });
+			await set(stateRef, { players: state.players, games: state.games });
 		}
 		function initials(name) { return name.split(/\s+/).map(word => word[0]).join('').slice(0, 2).toUpperCase(); }
 		function notify(message) { elements.toast.textContent = message; elements.toast.classList.add('show'); setTimeout(() => elements.toast.classList.remove('show'), 2200); }
