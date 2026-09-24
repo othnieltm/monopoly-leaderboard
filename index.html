@@ -176,7 +176,6 @@
 	<div class="toast" id="toast" role="status"></div>
 
 	<script>
-		const STORAGE_KEY = 'house-rules-monopoly-v1';
 		let state = { players: [], games: [] };
 		const elements = {
 			leaderboard: document.getElementById('leaderboard'), history: document.getElementById('history'),
@@ -188,20 +187,16 @@
 		elements.gameDate.value = localDate();
 
 		async function loadState() {
-			const localState = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"players":[],"games":[]}');
-			if (location.protocol === 'file:') { state = localState; return; }
 			try {
 				const response = await fetch('/api/state', { cache: 'no-store' });
 				if (!response.ok) throw new Error('Could not load league data');
 				state = await response.json();
 			} catch (error) {
-				state = localState;
-				notify('Using local data: server storage is unavailable');
+				state = { players: [], games: [] };
+				notify('Server storage is unavailable');
 			}
 		}
 		async function save() {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-			if (location.protocol === 'file:') return;
 			const response = await fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
 			if (!response.ok) throw new Error('Could not save league data');
 		}

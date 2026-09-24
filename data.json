@@ -1,4 +1,28 @@
 {
-  "players": [],
-  "games": []
+  "players": [
+    "Adrian",
+    "BigMoneyE",
+    "melissa",
+    "NIEL"
+  ],
+  "games": [
+    {
+      "id": "1790211596905",
+      "date": "2026-09-24",
+      "results": [
+        {
+          "name": "melissa",
+          "points": 3
+        },
+        {
+          "name": "Adrian",
+          "points": 2
+        },
+        {
+          "name": "NIEL",
+          "points": 1
+        }
+      ]
+    }
+  ]
 }
