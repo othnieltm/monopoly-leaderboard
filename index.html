@@ -4,7 +4,7 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<meta name="theme-color" content="#000000" />
-	<title>House Rules | Monopoly leaderboard</title>
+	<title>Pabhaizika</title>
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
@@ -196,15 +196,38 @@
 		function localDate() { const date = new Date(); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 10); }
 		elements.gameDate.value = localDate();
 
+		function firebaseArray(value) {
+			if (Array.isArray(value)) return value.map((item, key) => ({ key: String(key), item }));
+			if (!value || typeof value !== 'object') return [];
+			return Object.entries(value).map(([key, item]) => ({ key, item }));
+		}
+		function normalizeState(rawState) {
+			const source = rawState && typeof rawState === 'object' ? rawState : {};
+			const players = firebaseArray(source.players).map(({ key, item }) => {
+				if (typeof item === 'string') return item;
+				if (item && typeof item === 'object') return item.name || item.player || key;
+				return key;
+			}).filter(Boolean);
+			const games = firebaseArray(source.games).map(({ key, item }) => {
+				if (!item || typeof item !== 'object') return null;
+				return {
+					...item,
+					id: item.id || key,
+					results: firebaseArray(item.results).map(({ item: result }) => result).filter(result => result && typeof result === 'object')
+				};
+			}).filter(Boolean);
+			return { players, games };
+		}
+
 		async function loadState() {
 			try {
 				const snapshot = await getDoc(stateRef);
 				if (snapshot.exists()) {
-					state = snapshot.data();
+					state = normalizeState(snapshot.data());
 				} else {
 					const response = await fetch('/data.json', { cache: 'no-store' });
 					if (!response.ok) throw new Error('Could not load initial league data');
-					state = await response.json();
+					state = normalizeState(await response.json());
 					await setDoc(stateRef, state);
 				}
 			} catch (error) {
