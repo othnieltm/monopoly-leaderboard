@@ -47,7 +47,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === 'GET' && request.url === '/') return serveFile(response, path.join(root, 'index.html'), 'text/html; charset=utf-8');
-    if (request.method === 'GET' && request.url === '/data.json') return sendJson(response, 404, { error: 'Use /api/state' });
+    if (request.method === 'GET' && request.url === '/data.json') return serveFile(response, dataPath, 'application/json; charset=utf-8');
     return sendJson(response, 404, { error: 'Not found' });
   } catch (error) {
     console.error(error);

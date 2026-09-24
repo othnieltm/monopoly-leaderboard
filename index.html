@@ -59,9 +59,13 @@
 		.panel-heading h2 { margin: 0; font-size: 16px; letter-spacing: -.035em; }
 		.count { font-family: 'DM Mono', monospace; color: var(--muted); font-size: 12px; }
 
-		.leaderboard-head, .player-row { display: grid; grid-template-columns: 58px minmax(150px, 1fr) 100px 100px; align-items: center; gap: 12px; padding: 0 22px; }
+		.leaderboard-head, .player-row { display: grid; grid-template-columns: 58px minmax(150px, 1fr) 100px 100px 112px; align-items: center; gap: 12px; padding: 0 22px; }
 		.leaderboard-head { min-height: 40px; background: var(--panel); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
 		.player-row { min-height: 72px; border-top: 1px solid var(--line); }
+		.player-actions { display: flex; justify-content: flex-end; gap: 5px; }
+		.player-action { color: var(--muted); border: 0; background: none; font-size: 12px; padding: 6px; }
+		.player-action:hover { color: var(--accent); }
+		.player-action.delete:hover { color: var(--danger); }
 		.rank { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
 		.player-name { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 14px; }
 		.avatar { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); font-size: 11px; font-weight: 800; }
@@ -106,7 +110,7 @@
 			.score-key { margin-top: 28px; }
 			.layout { display: flex; flex-direction: column; }
 			.layout > * { width: 100%; }
-			.leaderboard-head, .player-row { grid-template-columns: 40px minmax(120px, 1fr) 62px 48px; padding: 0 14px; gap: 8px; }
+			.leaderboard-head, .player-row { grid-template-columns: 32px minmax(90px, 1fr) 54px 42px 96px; padding: 0 14px; gap: 8px; }
 			.player-name { gap: 8px; }
 			.wins { text-align: right; }
 			.panel-heading { padding: 18px 14px; }
@@ -141,7 +145,7 @@
 			<div>
 				<div class="panel">
 					<div class="panel-heading"><h2>Leaderboard</h2><span class="count" id="playerCount">0 players</span></div>
-					<div class="leaderboard-head"><span>#</span><span>Player</span><span>Points</span><span>Wins</span></div>
+					<div class="leaderboard-head"><span>#</span><span>Player</span><span>Points</span><span>Wins</span><span></span></div>
 					<div id="leaderboard"><div class="empty">No scores yet.<br>Add players and record your first game to get started.</div></div>
 				</div>
 				<div class="panel history">
@@ -172,10 +176,16 @@
 			</aside>
 		</section>
 	</main>
-	<footer><div class="shell">House Rules &middot; League data is stored in data.json.</div></footer>
+	<footer><div class="shell">House Rules &middot; League data is stored in Firebase.</div></footer>
 	<div class="toast" id="toast" role="status"></div>
 
-	<script>
+	<script type="module">
+		import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+		import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+		const firebaseConfig = { apiKey: 'AIzaSyCLJ4OqtwQQY69OmMSw1W3DAPoJzl84FPQ', authDomain: 'avengersmonopoly.firebaseapp.com', projectId: 'avengersmonopoly', storageBucket: 'avengersmonopoly.firebasestorage.app', messagingSenderId: '799607553775', appId: '1:799607553775:web:64cfdcb6b8486e1e96251a', measurementId: 'G-NQHJ6W2C5D' };
+		const app = initializeApp(firebaseConfig);
+		const db = getFirestore(app);
+		const stateRef = doc(db, 'leaderboard', 'state');
 		let state = { players: [], games: [] };
 		const elements = {
 			leaderboard: document.getElementById('leaderboard'), history: document.getElementById('history'),
@@ -188,17 +198,23 @@
 
 		async function loadState() {
 			try {
-				const response = await fetch('/api/state', { cache: 'no-store' });
-				if (!response.ok) throw new Error('Could not load league data');
-				state = await response.json();
+				const snapshot = await getDoc(stateRef);
+				if (snapshot.exists()) {
+					state = snapshot.data();
+				} else {
+					const response = await fetch('/data.json', { cache: 'no-store' });
+					if (!response.ok) throw new Error('Could not load initial league data');
+					state = await response.json();
+					await setDoc(stateRef, state);
+				}
 			} catch (error) {
+				console.error('Firebase load failed:', error);
 				state = { players: [], games: [] };
-				notify('Server storage is unavailable');
+				notify('Could not load Firebase data. Check Firestore setup and rules.');
 			}
 		}
 		async function save() {
-			const response = await fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
-			if (!response.ok) throw new Error('Could not save league data');
+			await setDoc(stateRef, { players: state.players, games: state.games });
 		}
 		function initials(name) { return name.split(/\s+/).map(word => word[0]).join('').slice(0, 2).toUpperCase(); }
 		function notify(message) { elements.toast.textContent = message; elements.toast.classList.add('show'); setTimeout(() => elements.toast.classList.remove('show'), 2200); }
@@ -212,7 +228,23 @@
 			const scores = getScores();
 			elements.playerCount.textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
 			if (!scores.length) { elements.leaderboard.innerHTML = '<div class="empty">No scores yet.<br>Add players and record your first game to get started.</div>'; return; }
-			elements.leaderboard.innerHTML = scores.map((score, index) => `<div class="player-row"><span class="rank">${String(index + 1).padStart(2, '0')}</span><span class="player-name"><span class="avatar">${initials(score.name)}</span>${escapeHtml(score.name)}</span><span class="points">${score.points} pts</span><span class="wins">${score.wins} ${score.wins === 1 ? 'win' : 'wins'}</span></div>`).join('');
+			elements.leaderboard.innerHTML = scores.map((score, index) => `<div class="player-row"><span class="rank">${String(index + 1).padStart(2, '0')}</span><span class="player-name"><span class="avatar">${initials(score.name)}</span>${escapeHtml(score.name)}</span><span class="points">${score.points} pts</span><span class="wins">${score.wins} ${score.wins === 1 ? 'win' : 'wins'}</span><span class="player-actions"><button class="player-action" data-action="rename" data-name="${escapeHtml(score.name)}" aria-label="Rename ${escapeHtml(score.name)}">Edit</button><button class="player-action delete" data-action="delete-player" data-name="${escapeHtml(score.name)}" aria-label="Delete ${escapeHtml(score.name)}">&times;</button></span></div>`).join('');
+			elements.leaderboard.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', async () => {
+				const oldName = button.dataset.name;
+				if (button.dataset.action === 'rename') {
+					const newName = prompt(`Rename ${oldName}`, oldName)?.trim();
+					if (!newName || newName === oldName) return;
+					if (state.players.some(player => player.toLowerCase() === newName.toLowerCase())) return notify('That player name is already in use');
+					state.players = state.players.map(player => player === oldName ? newName : player).sort((a, b) => a.localeCompare(b));
+					state.games.forEach(game => game.results.forEach(result => { if (result.name === oldName) result.name = newName; }));
+					await save(); render(); notify(`${oldName} renamed to ${newName}`);
+				} else {
+					if (!confirm(`Delete ${oldName}? Their results will be removed from game history.`)) return;
+					state.players = state.players.filter(player => player !== oldName);
+					state.games.forEach(game => { game.results = game.results.filter(result => result.name !== oldName); });
+					await save(); render(); notify(`${oldName} removed`);
+				}
+			}));
 		}
 		function renderSelects() {
 			['first', 'second', 'third'].forEach((id, index) => {

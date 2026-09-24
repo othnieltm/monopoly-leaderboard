@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leaderboard/state {
+      // This no-login league is publicly readable and writable. Anyone can change its data.
+      allow read, write: if true;
+    }
+  }
+}
