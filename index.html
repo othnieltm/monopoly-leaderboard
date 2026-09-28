@@ -69,6 +69,9 @@
 		.rank { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
 		.player-name { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 14px; }
 		.avatar { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); font-size: 11px; font-weight: 800; }
+		.crown { font-size: 16px; line-height: 1; }
+		.crown.latest { color: #2e8b57; }
+		.crown.number-one { color: #d69e00; }
 		.points { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
 		.wins { font-size: 13px; color: var(--muted); }
 		.empty { padding: 48px 22px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.6; }
@@ -255,11 +258,15 @@
 				return { name, points: finishes.reduce((total, result) => total + result.points, 0), wins: finishes.filter(result => result.points === 3).length };
 			}).sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name));
 		}
+		function getLatestWinner() {
+			return [...state.games].sort((a, b) => `${b.date}-${b.id}`.localeCompare(`${a.date}-${a.id}`))[0]?.results.find(result => result.points === 3)?.name;
+		}
 		function renderLeaderboard() {
 			const scores = getScores();
+			const latestWinner = getLatestWinner();
 			elements.playerCount.textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
 			if (!scores.length) { elements.leaderboard.innerHTML = '<div class="empty">No scores yet.<br>Add players and record your first game to get started.</div>'; return; }
-			elements.leaderboard.innerHTML = scores.map((score, index) => `<div class="player-row"><span class="rank">${String(index + 1).padStart(2, '0')}</span><span class="player-name"><span class="avatar">${initials(score.name)}</span>${escapeHtml(score.name)}</span><span class="points">${score.points} pts</span><span class="wins">${score.wins} ${score.wins === 1 ? 'win' : 'wins'}</span><span class="player-actions"><button class="player-action" data-action="rename" data-name="${escapeHtml(score.name)}" aria-label="Rename ${escapeHtml(score.name)}">Edit</button><button class="player-action delete" data-action="delete-player" data-name="${escapeHtml(score.name)}" aria-label="Delete ${escapeHtml(score.name)}">&times;</button></span></div>`).join('');
+			elements.leaderboard.innerHTML = scores.map((score, index) => `<div class="player-row"><span class="rank">${String(index + 1).padStart(2, '0')}</span><span class="player-name"><span class="avatar">${initials(score.name)}</span>${escapeHtml(score.name)}${latestWinner === score.name ? '<span class="crown latest" title="Most recent winner" aria-label="Most recent winner">&#9819;</span>' : ''}${index === 0 ? '<span class="crown number-one" title="Number one player" aria-label="Number one player">&#9819;</span>' : ''}</span><span class="points">${score.points} pts</span><span class="wins">${score.wins} ${score.wins === 1 ? 'win' : 'wins'}</span><span class="player-actions"><button class="player-action" data-action="rename" data-name="${escapeHtml(score.name)}" aria-label="Rename ${escapeHtml(score.name)}">Edit</button><button class="player-action delete" data-action="delete-player" data-name="${escapeHtml(score.name)}" aria-label="Delete ${escapeHtml(score.name)}">&times;</button></span></div>`).join('');
 			elements.leaderboard.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', async () => {
 				const oldName = button.dataset.name;
 				if (button.dataset.action === 'rename') {
