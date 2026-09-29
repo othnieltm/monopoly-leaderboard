@@ -63,8 +63,7 @@
 			align-items: center;
 		}
 		.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.04em; }
-		.mark { width: 22px; height: 22px; background: #000; transform: rotate(45deg); border-radius: 3px; position: relative; }
-		.mark::after { content: ''; position: absolute; inset: 6px; background: #fff; border-radius: 1px; }
+		.mark { display: block; width: 32px; height: 32px; object-fit: contain; }
 		.header-meta { margin-left: auto; color: var(--muted); font-size: 13px; }
 
 		.intro { padding: 64px 0 42px; display: flex; align-items: end; justify-content: space-between; gap: 28px; }
@@ -167,7 +166,7 @@
 	</div>
 	<header>
 		<div class="shell" style="display:flex;align-items:center;width:100%;">
-			<div class="brand"><span class="mark" aria-hidden="true"></span><span>AVENGERS</span></div>
+			<div class="brand"><img class="mark" src="https://images.seeklogo.com/logo-png/61/1/monopoly-man-logo-png_seeklogo-613169.png" alt="" aria-hidden="true" /><span>AVENGERS</span></div>
 			<div class="header-meta">Weekly Monopoly League</div>
 		</div>
 	</header>
