@@ -28,6 +28,30 @@
 			font-family: 'Manrope', sans-serif;
 			-webkit-font-smoothing: antialiased;
 		}
+		.money-field { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+		.money-bill { position: absolute; top: 110%; width: 104px; height: 48px; border: 1px solid rgba(38, 128, 76, .28); border-radius: 4px; background: repeating-linear-gradient(90deg, rgba(70, 167, 88, .13) 0, rgba(70, 167, 88, .13) 7px, rgba(255, 255, 255, .3) 7px, rgba(255, 255, 255, .3) 9px); color: rgba(38, 128, 76, .38); display: grid; place-items: center; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .08em; animation: float-money 22s linear infinite; }
+		.money-bill::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(38, 128, 76, .2); border-radius: 2px; }
+		.money-bill:nth-child(1) { left: 8%; animation-duration: 21s; animation-delay: -5s; transform: rotate(-14deg); }
+		.money-bill:nth-child(2) { left: 23%; animation-duration: 26s; animation-delay: -17s; transform: rotate(12deg) scale(.8); }
+		.money-bill:nth-child(3) { left: 39%; animation-duration: 24s; animation-delay: -9s; transform: rotate(-8deg) scale(1.15); }
+		.money-bill:nth-child(4) { left: 58%; animation-duration: 28s; animation-delay: -21s; transform: rotate(16deg) scale(.75); }
+		.money-bill:nth-child(5) { left: 74%; animation-duration: 23s; animation-delay: -13s; transform: rotate(-11deg); }
+		.money-bill:nth-child(6) { left: 91%; animation-duration: 27s; animation-delay: -3s; transform: rotate(9deg) scale(.85); }
+		@keyframes float-money { from { translate: 0 0; rotate: 0deg; } to { translate: 70px -125vh; rotate: 360deg; } }
+		.title-deed { position: absolute; top: 110%; width: 66px; height: 88px; border: 1px solid rgba(0, 112, 243, .2); border-radius: 3px; background: rgba(255, 255, 255, .72); color: rgba(17, 17, 17, .32); padding-top: 16px; text-align: center; font-family: 'DM Mono', monospace; font-size: 7px; letter-spacing: .04em; animation: float-money 29s linear infinite; }
+		.title-deed::before { content: ''; position: absolute; top: 7px; left: 7px; right: 7px; height: 7px; background: rgba(0, 112, 243, .32); }
+		.title-deed::after { content: 'PROPERTY'; display: block; margin: 11px 8px 0; padding-top: 16px; border-top: 1px solid rgba(17, 17, 17, .16); }
+		.title-deed:nth-child(7) { left: 16%; animation-delay: -19s; transform: rotate(-18deg); }
+		.title-deed:nth-child(8) { left: 66%; animation-duration: 32s; animation-delay: -8s; transform: rotate(14deg) scale(.85); }
+		.title-deed:nth-child(9) { left: 84%; animation-duration: 26s; animation-delay: -24s; transform: rotate(-9deg) scale(.72); }
+		.game-piece { position: absolute; top: 110%; width: 34px; height: 52px; border-radius: 50% 50% 40% 40%; background: rgba(217, 45, 32, .2); box-shadow: 0 29px 0 -7px rgba(217, 45, 32, .25); animation: float-piece 25s linear infinite; }
+		.game-piece::before { content: ''; position: absolute; top: -9px; left: 8px; width: 18px; height: 18px; border-radius: 50%; background: inherit; }
+		.game-piece:nth-child(10) { left: 31%; animation-delay: -14s; transform: rotate(-12deg) scale(.8); }
+		.game-piece:nth-child(11) { left: 49%; background: rgba(0, 112, 243, .2); box-shadow: 0 29px 0 -7px rgba(0, 112, 243, .25); animation-duration: 30s; animation-delay: -26s; transform: rotate(15deg) scale(.7); }
+		.game-piece:nth-child(12) { left: 78%; background: rgba(214, 158, 0, .22); box-shadow: 0 29px 0 -7px rgba(214, 158, 0, .28); animation-duration: 27s; animation-delay: -4s; transform: rotate(-8deg); }
+		@keyframes float-piece { from { translate: 0 0; rotate: 0deg; } to { translate: -55px -125vh; rotate: -260deg; } }
+		header, main, footer { position: relative; z-index: 1; }
+		@media (prefers-reduced-motion: reduce) { .money-bill, .title-deed, .game-piece { animation: none; top: 18%; } }
 		button, input, select { font: inherit; }
 		button { cursor: pointer; }
 		.shell { width: min(1160px, calc(100% - 48px)); margin: 0 auto; }
@@ -123,6 +147,20 @@
 	</style>
 </head>
 <body>
+	<div class="money-field" aria-hidden="true">
+		<span class="money-bill">$100</span>
+		<span class="money-bill">$50</span>
+		<span class="money-bill">$20</span>
+		<span class="money-bill">$500</span>
+		<span class="money-bill">$10</span>
+		<span class="money-bill">$200</span>
+		<span class="title-deed">TITLE DEED</span>
+		<span class="title-deed">TITLE DEED</span>
+		<span class="title-deed">TITLE DEED</span>
+		<span class="game-piece"></span>
+		<span class="game-piece"></span>
+		<span class="game-piece"></span>
+	</div>
 	<header>
 		<div class="shell" style="display:flex;align-items:center;width:100%;">
 			<div class="brand"><span class="mark" aria-hidden="true"></span><span>AVENGERS</span></div>
