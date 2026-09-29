@@ -90,7 +90,11 @@
 		.player-action { color: var(--muted); border: 0; background: none; font-size: 12px; padding: 6px; }
 		.player-action:hover { color: var(--accent); }
 		.player-action.delete:hover { color: var(--danger); }
-		.rank { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
+		.rank { display: flex; align-items: center; gap: 4px; font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
+		.rank-movement { width: 15px; height: 15px; flex: 0 0 15px; display: grid; place-items: center; font-size: 12px; line-height: 1; }
+		.movement-up { color: var(--success); }
+		.movement-down { color: var(--danger); }
+		.movement-steady { border: 1px solid currentColor; border-radius: 50%; color: #8b8b8b; font-size: 10px; }
 		.player-name { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 14px; }
 		.avatar { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); font-size: 11px; font-weight: 800; }
 		.crown { font-size: 16px; line-height: 1; }
@@ -137,7 +141,7 @@
 			.score-key { margin-top: 28px; }
 			.layout { display: flex; flex-direction: column; }
 			.layout > * { width: 100%; }
-			.leaderboard-head, .player-row { grid-template-columns: 32px minmax(90px, 1fr) 54px 42px 96px; padding: 0 14px; gap: 8px; }
+			.leaderboard-head, .player-row { grid-template-columns: 38px minmax(90px, 1fr) 54px 42px 96px; padding: 0 14px; gap: 8px; }
 			.player-name { gap: 8px; }
 			.wins { text-align: right; }
 			.panel-heading { padding: 18px 14px; }
@@ -290,9 +294,9 @@
 		}
 		function initials(name) { return name.split(/\s+/).map(word => word[0]).join('').slice(0, 2).toUpperCase(); }
 		function notify(message) { elements.toast.textContent = message; elements.toast.classList.add('show'); setTimeout(() => elements.toast.classList.remove('show'), 2200); }
-		function getScores() {
+		function getScores(games = state.games) {
 			return state.players.map(name => {
-				const finishes = state.games.flatMap(game => game.results).filter(result => result.name === name);
+				const finishes = games.flatMap(game => game.results).filter(result => result.name === name);
 				return { name, points: finishes.reduce((total, result) => total + result.points, 0), wins: finishes.filter(result => result.points === 3).length };
 			}).sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name));
 		}
@@ -302,9 +306,22 @@
 		function renderLeaderboard() {
 			const scores = getScores();
 			const latestWinner = getLatestWinner();
+			const latestGame = [...state.games].sort((a, b) => `${b.date}-${b.id}`.localeCompare(`${a.date}-${a.id}`))[0];
+			const previousGames = latestGame ? state.games.filter(game => game !== latestGame) : state.games;
+			const previousScores = previousGames.length ? getScores(previousGames) : [];
+			const previousPositions = new Map(previousScores.map((score, index) => [score.name, index + 1]));
 			elements.playerCount.textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
 			if (!scores.length) { elements.leaderboard.innerHTML = '<div class="empty">No scores yet.<br>Add players and record your first game to get started.</div>'; return; }
-			elements.leaderboard.innerHTML = scores.map((score, index) => `<div class="player-row"><span class="rank">${String(index + 1).padStart(2, '0')}</span><span class="player-name"><span class="avatar">${initials(score.name)}</span>${escapeHtml(score.name)}${latestWinner === score.name ? '<span class="crown latest" title="Most recent winner" aria-label="Most recent winner">&#9819;</span>' : ''}${index === 0 ? '<span class="crown number-one" title="Number one player" aria-label="Number one player">&#9819;</span>' : ''}</span><span class="points">${score.points} pts</span><span class="wins">${score.wins} ${score.wins === 1 ? 'win' : 'wins'}</span><span class="player-actions"><button class="player-action" data-action="rename" data-name="${escapeHtml(score.name)}" aria-label="Rename ${escapeHtml(score.name)}">Edit</button><button class="player-action delete" data-action="delete-player" data-name="${escapeHtml(score.name)}" aria-label="Delete ${escapeHtml(score.name)}">&times;</button></span></div>`).join('');
+			elements.leaderboard.innerHTML = scores.map((score, index) => {
+				const previousPosition = previousPositions.get(score.name);
+				const position = index + 1;
+				const movement = previousPosition == null || previousPosition === position
+					? { className: 'movement-steady', symbol: '&#8722;', label: previousPosition == null ? 'No previous position' : 'No change' }
+					: previousPosition > position
+							? { className: 'movement-up', symbol: '&#8593;', label: `Up ${previousPosition - position} ${previousPosition - position === 1 ? 'place' : 'places'}` }
+							: { className: 'movement-down', symbol: '&#8595;', label: `Down ${position - previousPosition} ${position - previousPosition === 1 ? 'place' : 'places'}` };
+				return `<div class="player-row"><span class="rank"><span>${String(position).padStart(2, '0')}</span><span class="rank-movement ${movement.className}" role="img" aria-label="${movement.label}" title="${movement.label}">${movement.symbol}</span></span><span class="player-name"><span class="avatar">${initials(score.name)}</span>${escapeHtml(score.name)}${latestWinner === score.name ? '<span class="crown latest" title="Most recent winner" aria-label="Most recent winner">&#9819;</span>' : ''}${index === 0 ? '<span class="crown number-one" title="Number one player" aria-label="Number one player">&#9819;</span>' : ''}</span><span class="points">${score.points} pts</span><span class="wins">${score.wins} ${score.wins === 1 ? 'win' : 'wins'}</span><span class="player-actions"><button class="player-action" data-action="rename" data-name="${escapeHtml(score.name)}" aria-label="Rename ${escapeHtml(score.name)}">Edit</button><button class="player-action delete" data-action="delete-player" data-name="${escapeHtml(score.name)}" aria-label="Delete ${escapeHtml(score.name)}">&times;</button></span></div>`;
+			}).join('');
 			elements.leaderboard.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', async () => {
 				const oldName = button.dataset.name;
 				if (button.dataset.action === 'rename') {
