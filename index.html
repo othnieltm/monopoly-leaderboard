@@ -85,6 +85,17 @@
 		.leaderboard-head, .player-row { display: grid; grid-template-columns: 58px minmax(150px, 1fr) 100px 100px 112px; align-items: center; gap: 12px; padding: 0 22px; }
 		.leaderboard-head { min-height: 40px; background: var(--panel); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
 		.player-row { min-height: 72px; border-top: 1px solid var(--line); }
+		@property --rgb-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+		@keyframes rgb-border-spin { to { --rgb-angle: 360deg; } }
+		#leaderboard .player-row:first-child {
+			--rgb-angle: 0deg;
+			border: 2px solid transparent;
+			border-radius: 6px;
+			background: linear-gradient(#fff, #fff) padding-box, conic-gradient(from var(--rgb-angle), #ff453a, #ffd60a, #32d74b, #64d2ff, #bf5af2, #ff375f, #ff453a) border-box;
+			box-shadow: 0 0 7px rgba(0, 199, 255, .45), 0 0 12px rgba(255, 45, 85, .25);
+			animation: rgb-border-spin 5s linear infinite;
+		}
+		@media (prefers-reduced-motion: reduce) { #leaderboard .player-row:first-child { animation: none; } }
 		.player-actions { display: flex; justify-content: flex-end; gap: 5px; }
 		.player-action { color: var(--muted); border: 0; background: none; font-size: 12px; padding: 6px; }
 		.player-action:hover { color: var(--accent); }
