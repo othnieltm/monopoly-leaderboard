@@ -30,6 +30,8 @@
 			-webkit-font-smoothing: antialiased;
 		}
 		.money-field { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+		.dice-canvas { position: absolute; z-index: 0; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; opacity: .72; }
+		.money-field > span { z-index: 1; }
 		.money-bill { position: absolute; top: 110%; width: 104px; height: 48px; border: 1px solid rgba(38, 128, 76, .28); border-radius: 4px; background: repeating-linear-gradient(90deg, rgba(70, 167, 88, .13) 0, rgba(70, 167, 88, .13) 7px, rgba(255, 255, 255, .3) 7px, rgba(255, 255, 255, .3) 9px); color: rgba(38, 128, 76, .38); display: grid; place-items: center; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .08em; animation: float-money 22s linear infinite; }
 		.money-bill::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(38, 128, 76, .2); border-radius: 2px; }
 		.money-bill:nth-child(1) { left: 8%; animation-duration: 21s; animation-delay: -5s; transform: rotate(-14deg); }
@@ -76,6 +78,16 @@
 		.score-items { display: flex; gap: 18px; }
 		.score-items strong { display: block; font-size: 20px; letter-spacing: -.05em; }
 		.score-items span { color: var(--muted); font-size: 11px; }
+		.schedule-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; margin: 0 0 28px; padding: 18px 22px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(250, 250, 250, .94); }
+		.schedule-label { margin-bottom: 6px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; }
+		.countdown { display: flex; align-items: baseline; gap: 7px; font-family: 'DM Mono', monospace; }
+		.countdown strong { font-size: 24px; color: var(--ink); }
+		.countdown span { margin-right: 5px; color: var(--muted); font-size: 11px; }
+		.scheduled-date { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+		.schedule-form { display: flex; align-items: end; gap: 8px; }
+		.schedule-form label { margin: 0; min-width: 170px; }
+		.schedule-form input { padding: 8px 10px; }
+		.schedule-form button { white-space: nowrap; }
 
 		.layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, .9fr); gap: 22px; align-items: start; padding-bottom: 80px; }
 		.panel { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; overflow: hidden; }
@@ -192,6 +204,11 @@
 			.header-meta { display: none; }
 			.intro { display: block; padding: 42px 0 30px; }
 			.score-key { margin-top: 28px; }
+			.schedule-panel { grid-template-columns: 1fr; gap: 14px; padding: 16px 14px; }
+			.schedule-form label { min-width: 0; flex: 1; }
+			.schedule-form .secondary { padding: 8px; }
+			.countdown { flex-wrap: wrap; gap: 5px; }
+			.countdown strong { font-size: 21px; }
 			.layout { display: flex; flex-direction: column; }
 			.layout > * { width: 100%; }
 			.leaderboard-head, .player-row { grid-template-columns: 38px minmax(90px, 1fr) 54px 42px 96px; padding: 0 14px; gap: 8px; }
@@ -204,7 +221,7 @@
 	</style>
 </head>
 <body>
-	<div class="money-field" aria-hidden="true">
+	<div class="money-field" id="moneyField" aria-hidden="true">
 		<span class="money-bill">$100</span>
 		<span class="money-bill">$50</span>
 		<span class="money-bill">$20</span>
@@ -217,6 +234,7 @@
 		<span class="game-piece"></span>
 		<span class="game-piece"></span>
 		<span class="game-piece"></span>
+		<canvas class="dice-canvas"></canvas>
 	</div>
 	<header>
 		<div class="shell" style="display:flex;align-items:center;width:100%;">
@@ -237,6 +255,18 @@
 				<div class="score-key-label">Scoring system</div>
 				<div class="score-items"><div><strong>3</strong><span>Win</span></div><div><strong>2</strong><span>Second</span></div><div><strong>1</strong><span>Third</span></div></div>
 			</div>
+		</section>
+		<section class="schedule-panel" aria-labelledby="scheduleTitle">
+			<div>
+				<div class="schedule-label" id="scheduleTitle">Next game</div>
+				<div class="countdown" id="countdown" role="timer" aria-live="off">No date scheduled</div>
+				<p class="scheduled-date" id="scheduledDate">Set a proposed date to start the countdown.</p>
+			</div>
+			<form class="schedule-form" id="scheduleForm">
+				<label for="nextGameDate">Proposed date<input id="nextGameDate" type="date" required /></label>
+				<button class="secondary" type="submit">Set date</button>
+				<button class="secondary" id="clearSchedule" type="button" aria-label="Clear scheduled game date">Clear</button>
+			</form>
 		</section>
 
 		<section class="layout">
@@ -285,15 +315,131 @@
 		const db = getDatabase(app);
 		const stateRef = ref(db, 'leaderboard/state');
 		const databaseRoot = ref(db);
-		let state = { players: [], games: [] };
+		let state = { players: [], games: [], nextGameDate: '' };
 		const elements = {
 			leaderboard: document.getElementById('leaderboard'), history: document.getElementById('history'),
 			playerCount: document.getElementById('playerCount'), gameCount: document.getElementById('gameCount'),
 			gameDate: document.getElementById('gameDate'), gameForm: document.getElementById('gameForm'),
+			nextGameDate: document.getElementById('nextGameDate'), scheduleForm: document.getElementById('scheduleForm'),
+			countdown: document.getElementById('countdown'), scheduledDate: document.getElementById('scheduledDate'),
+			clearSchedule: document.getElementById('clearSchedule'),
 			newPlayer: document.getElementById('newPlayer'), addPlayer: document.getElementById('addPlayer'), toast: document.getElementById('toast')
 		};
 		function localDate() { const date = new Date(); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 10); }
 		elements.gameDate.value = localDate();
+		elements.nextGameDate.min = localDate();
+
+		async function initFloatingDice() {
+			try {
+				const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
+				const container = document.getElementById('moneyField');
+				const canvas = container.querySelector('.dice-canvas');
+				const scene = new THREE.Scene();
+				const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
+				camera.position.z = 14;
+				const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+				renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.setClearColor(0xffffff, 0);
+				scene.add(new THREE.AmbientLight(0xffffff, 1.7));
+				const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+				keyLight.position.set(-4, 7, 8);
+				scene.add(keyLight);
+				const fillLight = new THREE.DirectionalLight(0xb8d6c0, 1.1);
+				fillLight.position.set(5, -3, 4);
+				scene.add(fillLight);
+
+				const bodyGeometry = new THREE.BoxGeometry(1, 1, 1);
+				const pipGeometry = new THREE.SphereGeometry(0.052, 12, 8);
+				const pipMaterial = new THREE.MeshStandardMaterial({ color: '#315d3c', roughness: 0.42, transparent: true, opacity: 0.86, depthWrite: false });
+				const patterns = {
+					1: [[0, 0]],
+					2: [[-1, -1], [1, 1]],
+					3: [[-1, -1], [0, 0], [1, 1]],
+					4: [[-1, -1], [-1, 1], [1, -1], [1, 1]],
+					5: [[-1, -1], [-1, 1], [0, 0], [1, -1], [1, 1]],
+					6: [[-1, -1], [-1, 0], [-1, 1], [1, -1], [1, 0], [1, 1]]
+				};
+				const faces = [
+					{ value: 1, normal: [0, 0, 1], right: [1, 0, 0], up: [0, 1, 0] },
+					{ value: 6, normal: [0, 0, -1], right: [-1, 0, 0], up: [0, 1, 0] },
+					{ value: 2, normal: [1, 0, 0], right: [0, 0, -1], up: [0, 1, 0] },
+					{ value: 5, normal: [-1, 0, 0], right: [0, 0, 1], up: [0, 1, 0] },
+					{ value: 3, normal: [0, 1, 0], right: [1, 0, 0], up: [0, 0, -1] },
+					{ value: 4, normal: [0, -1, 0], right: [1, 0, 0], up: [0, 0, 1] }
+				];
+				const layouts = [
+					[-0.40, 0.38, -1.2, 0.72], [-0.08, 0.13, 1.4, 0.55], [0.39, 0.39, -0.3, 0.68],
+					[0.41, -0.18, 1.7, 0.6], [-0.35, -0.4, 0.2, 0.76], [0.04, -0.48, -1.1, 0.54]
+				];
+				const dice = layouts.map(([u, v, depth, size], index) => {
+					const group = new THREE.Group();
+					group.scale.setScalar(size);
+					const bodyMaterial = new THREE.MeshStandardMaterial({
+						color: ['#f3f0dc', '#e8f0e4', '#f2e9dc'][index % 3], roughness: 0.34, metalness: 0.02,
+						transparent: true, opacity: 0.78, depthWrite: false
+					});
+					group.add(new THREE.Mesh(bodyGeometry, bodyMaterial));
+					const pips = new THREE.InstancedMesh(pipGeometry, pipMaterial, 21);
+					const matrix = new THREE.Matrix4();
+					let pipIndex = 0;
+					faces.forEach(face => patterns[face.value].forEach(([x, y]) => {
+						const position = new THREE.Vector3(...face.normal).multiplyScalar(0.515)
+							.add(new THREE.Vector3(...face.right).multiplyScalar(x * 0.19))
+							.add(new THREE.Vector3(...face.up).multiplyScalar(y * 0.19));
+						matrix.makeTranslation(position.x, position.y, position.z);
+						pips.setMatrixAt(pipIndex++, matrix);
+					}));
+					pips.instanceMatrix.needsUpdate = true;
+					group.add(pips);
+					scene.add(group);
+					return { group, u, v, depth, phase: index * 1.17, speed: 0.45 + index * 0.045, spin: index % 2 ? 0.12 : -0.1, rotation: [index * 0.37 + 0.3, index * 0.61 + 0.2, index * 0.23], baseX: 0, baseY: 0 };
+				});
+				const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+				let frameId = 0;
+				const resize = () => {
+					const width = window.innerWidth;
+					const height = window.innerHeight;
+					renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
+					renderer.setSize(width, height);
+					camera.aspect = width / height;
+					camera.updateProjectionMatrix();
+					const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
+					dice.forEach(die => {
+						die.baseX = die.u * visibleHeight * camera.aspect / 2;
+						die.baseY = die.v * visibleHeight / 2;
+						die.group.position.set(die.baseX, die.baseY, die.depth);
+					});
+					renderer.render(scene, camera);
+				};
+				const animate = timestamp => {
+					frameId = 0;
+					if (document.hidden || reducedMotion.matches) return;
+					const time = timestamp / 1000;
+					dice.forEach(die => {
+						die.group.position.x = die.baseX + Math.sin(time * die.speed + die.phase) * 0.22;
+						die.group.position.y = die.baseY + Math.cos(time * die.speed * 0.83 + die.phase) * 0.3;
+						die.group.rotation.set(die.rotation[0] + Math.sin(time * 0.38 + die.phase) * 0.1, die.rotation[1] + time * die.spin, die.rotation[2] + Math.cos(time * 0.31 + die.phase) * 0.08);
+					});
+					renderer.render(scene, camera);
+					frameId = requestAnimationFrame(animate);
+				};
+				const syncMotion = () => {
+					if (reducedMotion.matches || document.hidden) {
+						if (frameId) cancelAnimationFrame(frameId);
+						frameId = 0;
+						renderer.render(scene, camera);
+					} else if (!frameId) frameId = requestAnimationFrame(animate);
+				};
+				window.addEventListener('resize', resize, { passive: true });
+				document.addEventListener('visibilitychange', syncMotion);
+				reducedMotion.addEventListener?.('change', syncMotion);
+				resize();
+				syncMotion();
+			} catch (error) {
+				console.warn('Floating dice background unavailable:', error);
+			}
+		}
 
 		function firebaseArray(value) {
 			if (Array.isArray(value)) return value.map((item, key) => ({ key: String(key), item }));
@@ -315,7 +461,7 @@
 					results: firebaseArray(item.results).map(({ item: result }) => result).filter(result => result && typeof result === 'object')
 				};
 			}).filter(Boolean);
-			return { players, games };
+			return { players, games, nextGameDate: typeof source.nextGameDate === 'string' ? source.nextGameDate : '' };
 		}
 
 		async function loadState() {
@@ -343,7 +489,7 @@
 			}
 		}
 		async function save() {
-			await set(stateRef, { players: state.players, games: state.games });
+			await set(stateRef, { players: state.players, games: state.games, nextGameDate: state.nextGameDate });
 		}
 		function initials(name) { return name.split(/\s+/).map(word => word[0]).join('').slice(0, 2).toUpperCase(); }
 		function notify(message) { elements.toast.textContent = message; elements.toast.classList.add('show'); setTimeout(() => elements.toast.classList.remove('show'), 2200); }
@@ -408,7 +554,45 @@
 			document.querySelectorAll('.delete').forEach(button => button.addEventListener('click', async () => { state.games = state.games.filter(game => game.id !== button.dataset.id); await save(); render(); notify('Game removed'); }));
 		}
 		function escapeHtml(value) { return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character])); }
-		function render() { renderLeaderboard(); renderSelects(); renderHistory(); }
+		function renderSchedule() {
+			const date = state.nextGameDate;
+			if (!date) {
+				elements.countdown.textContent = 'No date scheduled';
+				elements.scheduledDate.textContent = 'Set a proposed date to start the countdown.';
+				return;
+			}
+			const target = new Date(`${date}T00:00:00`);
+			elements.scheduledDate.textContent = `Proposed for ${target.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`;
+			const remaining = target.getTime() - Date.now();
+			if (date === localDate()) {
+				elements.countdown.textContent = 'Game day!';
+				return;
+			}
+			if (remaining <= 0 || Number.isNaN(remaining)) {
+				elements.countdown.textContent = 'Date passed';
+				return;
+			}
+			const seconds = Math.floor(remaining / 1000);
+			const days = Math.floor(seconds / 86400);
+			const hours = Math.floor(seconds % 86400 / 3600);
+			const minutes = Math.floor(seconds % 3600 / 60);
+			const remainder = seconds % 60;
+			elements.countdown.innerHTML = `<strong>${days}</strong><span>d</span><strong>${String(hours).padStart(2, '0')}</strong><span>h</span><strong>${String(minutes).padStart(2, '0')}</strong><span>m</span><strong>${String(remainder).padStart(2, '0')}</strong><span>s</span>`;
+		}
+		function render() { renderLeaderboard(); renderSelects(); renderHistory(); renderSchedule(); }
+
+		elements.scheduleForm.addEventListener('submit', async event => {
+			event.preventDefault();
+			if (elements.nextGameDate.value < localDate()) return notify('Choose today or a future date');
+			state.nextGameDate = elements.nextGameDate.value;
+			await save(); renderSchedule(); notify('Next game date saved');
+		});
+		elements.clearSchedule.addEventListener('click', async () => {
+			state.nextGameDate = '';
+			elements.nextGameDate.value = '';
+			await save(); renderSchedule(); notify('Scheduled game date cleared');
+		});
+		setInterval(renderSchedule, 1000);
 
 		elements.addPlayer.addEventListener('click', async () => {
 			const name = elements.newPlayer.value.trim();
@@ -425,7 +609,8 @@
 			if (new Set(results.map(result => result.name)).size !== results.length) return notify('Choose different players');
 			state.games.push({ id: `${Date.now()}`, date: elements.gameDate.value, results }); await save(); elements.gameForm.reset(); elements.gameDate.value = localDate(); render(); notify('Weekly result saved');
 		});
-		loadState().then(render);
+		initFloatingDice();
+		loadState().then(() => { elements.nextGameDate.value = state.nextGameDate; render(); });
 	</script>
 </body>
 </html>
