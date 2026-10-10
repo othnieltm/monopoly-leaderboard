@@ -108,12 +108,30 @@
 		}
 		#leaderboard .player-row:first-child {
 			--border-angle: 0deg;
+			min-height: 98px;
 			border: 2px solid transparent;
 			border-radius: 6px;
 			background: linear-gradient(110deg, #f2df9c, #fff6d5 18%, #e8ce79 36%, #fffbe9 52%, #d9b94f 72%, #f5e7b3) padding-box, conic-gradient(from var(--border-angle), #ff453a, #ffd60a, #32d74b, #64d2ff, #bf5af2, #ff375f, #ff453a) border-box;
 			box-shadow: 0 0 4px rgba(0, 199, 255, .4), 0 0 8px rgba(255, 45, 85, .2);
 			animation: podium-border-spin 5s linear infinite;
 		}
+		#leaderboard .player-row:first-child::before {
+			content: 'CHAIRMAN OF THE BOARD';
+			position: absolute;
+			top: 6px;
+			left: 22px;
+			right: 22px;
+			z-index: 1;
+			color: #785b08;
+			font-family: 'DM Mono', monospace;
+			font-size: 11px;
+			font-weight: 500;
+			letter-spacing: .06em;
+			text-align: center;
+			padding-bottom: 5px;
+			border-bottom: 1px solid rgba(120, 91, 8, .32);
+		}
+		#leaderboard .player-row:first-child > * { align-self: end; margin-bottom: 10px; }
 		#leaderboard .player-row:nth-child(2), #leaderboard .player-row:nth-child(3) {
 			--border-angle: 0deg;
 			border: 2px solid transparent;
@@ -214,6 +232,7 @@
 			.leaderboard-head, .player-row { grid-template-columns: 38px minmax(90px, 1fr) 54px 42px 96px; padding: 0 14px; gap: 8px; }
 			.player-name { gap: 8px; }
 			.wins { text-align: right; }
+			#leaderboard .player-row:first-child::before { left: 14px; right: 14px; }
 			.panel-heading { padding: 18px 14px; }
 			.form-body, .subsection { padding: 18px 14px; }
 			.history-row { padding: 14px; }
